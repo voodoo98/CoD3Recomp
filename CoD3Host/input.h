@@ -29,6 +29,8 @@ namespace Input
 
     Pad State();
 
+    bool Aiming();
+
     // The Xbox button mask the pad is currently reporting.
     uint16_t Buttons();
     // When a button last went down (GetTickCount64, 0 for never), however

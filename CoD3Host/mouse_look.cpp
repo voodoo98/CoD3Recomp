@@ -106,7 +106,9 @@ PPC_FUNC(sub_8250FF48)
     }
 
     const double zoom = ReadFloat(base, client + ClientZoom);
-    const double degrees = DegreesPerCount * Settings::Get().mouseSensitivity * (zoom > 0.0 ? zoom : 1.0);
+    const Settings::Values settings = Settings::Get();
+    const double degrees = DegreesPerCount * settings.mouseSensitivity * (zoom > 0.0 ? zoom : 1.0) *
+        (Input::Aiming() ? settings.adsSensitivity : 1.0);
     // The title's inverted look takes another factor for its pitch.
     const double normal = ReadFloat(base, InvertOff);
     const double now = ReadFloat(base, base[Profile + 65] != 0 ? InvertOn : InvertOff);

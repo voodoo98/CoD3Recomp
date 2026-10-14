@@ -87,6 +87,7 @@ namespace
     // swallows the pointer without asking cannot be left.
     std::atomic<bool> g_mouseHeld{ false };
     std::atomic<bool> g_padLast{ false };   // the pad was the last used (Input::PadPrompts)
+    std::atomic<bool> g_aiming{ false };
     POINT g_centre{};
 
     void SetHold(bool hold)
@@ -222,7 +223,7 @@ namespace
         }
 
         // The settings menu's sensitivity scales the gain, both axes alike.
-        const double gain = 1300.0 * Settings::Get().mouseSensitivity * scale;
+        const double gain = 1300.0 * Settings::Get().mouseSensitivity * scale * (g_aiming.load() ? Settings::Get().adsSensitivity : 1.0);
         const long x = long(std::clamp(double(dx) * gain, -32767.0, 32767.0));
         // Screen coordinates grow downwards and a stick grows upwards.
         const long y = long(std::clamp(-double(dy) * gain, -32767.0, 32767.0));
@@ -643,7 +644,18 @@ namespace
         const int fire = keys.keys[Settings::Fire], aim = keys.keys[Settings::Aim];
         const auto mouseButton = [](int key) { return key == VK_LBUTTON || key == VK_RBUTTON || key == VK_MBUTTON || key == VK_XBUTTON1 || key == VK_XBUTTON2; };
         if (fire != 0 && (held || !mouseButton(fire)) && Down(fire)) pad.rightTrigger = 255;
-        if (aim != 0 && (held || !mouseButton(aim)) && Down(aim)) pad.leftTrigger = 255;
+        const bool aimDown = aim != 0 && (held || !mouseButton(aim)) && Down(aim);
+        if (Settings::Get().aimToggle)
+        {
+            // A press flips it; letting go of the mouse or leaving a level clears it.
+            static bool wasDown = false, toggled = false;
+            if (aimDown && !wasDown) toggled = !toggled;
+            wasDown = aimDown;
+            if (!held) toggled = false;
+            if (toggled) pad.leftTrigger = 255;
+        }
+        else if (aimDown) pad.leftTrigger = 255;
+        g_aiming.store(pad.leftTrigger != 0);
 
         return pad;
     }
@@ -770,6 +782,8 @@ Input::Pad Input::State()
     ScriptedRead(g_unfiltered);
     return g_pad;
 }
+
+bool Input::Aiming() { return g_aiming.load(); }
 
 uint16_t Input::Buttons()
 {

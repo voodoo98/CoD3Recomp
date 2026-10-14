@@ -153,6 +153,7 @@ void Settings::Load(const std::filesystem::path& exeDirectory)
             else if (key == "model_detail") v.modelDetail = atoi(value.c_str());
             else if (key == "shadow_quality") v.shadowQuality = atoi(value.c_str());
             else if (key == "aspect_ratio") v.aspectRatio = atoi(value.c_str());
+            else if (key == "aim_blur") v.aimBlur = atoi(value.c_str()) != 0;
             else if (key == "console_depth") v.consoleDepth = atoi(value.c_str()) != 0;
             else if (key == "native_commands") v.nativeCommands = atoi(value.c_str()) != 0;
             else if (key == "watch_writes") v.watchWrites = atoi(value.c_str()) != 0;
@@ -167,6 +168,8 @@ void Settings::Load(const std::filesystem::path& exeDirectory)
             // The mouse looks straight into the view angles now; the old
             // mouse_sensitivity was a stick's gain and is left behind.
             else if (key == "look_sensitivity") v.mouseSensitivity = float(atof(value.c_str()));
+            else if (key == "ads_sensitivity") v.adsSensitivity = float(atof(value.c_str()));
+            else if (key == "aim_toggle") v.aimToggle = atoi(value.c_str()) != 0;
             else if (key == "raw_mouse") v.rawMouse = atoi(value.c_str()) != 0;
             else if (key == "auto_update") v.autoUpdate = atoi(value.c_str()) != 0;
             else if (key.compare(0, 4, "key_") == 0)
@@ -190,6 +193,7 @@ void Settings::Load(const std::filesystem::path& exeDirectory)
     if (v.aspectRatio < 0 || v.aspectRatio > 3) v.aspectRatio = 0;
     if (v.windowMode < 0 || v.windowMode > 1) v.windowMode = 0;
     if (!(v.mouseSensitivity >= 0.05f && v.mouseSensitivity <= 5.0f)) v.mouseSensitivity = 1.0f;
+    if (!(v.adsSensitivity >= 0.1f && v.adsSensitivity <= 5.0f)) v.adsSensitivity = 1.5f;
     std::lock_guard<std::mutex> lock(g_mutex);
     g_values = v;
 }
@@ -208,6 +212,7 @@ void Settings::Save()
             v.renderer, resolution, v.resolutionScale, v.textureFilter, v.anisotropy, v.vsync ? 1 : 0, v.unlockFrameRate ? 1 : 0, v.antialiasing, v.textureQuality, v.fov, v.modelDetail, v.shadowQuality, v.aspectRatio, v.consoleDepth ? 1 : 0, v.nativeCommands ? 1 : 0, v.watchWrites ? 1 : 0, v.windowMode, v.fpsOverlay ? 1 : 0, v.statsOverlay ? 1 : 0);
         fprintf(file, "[game]\naim_assist = %d\nsubtitles = %d\nconsole = %d\ncontroller = %d\nbutton_prompts = %d\nlook_sensitivity = %.2f\nraw_mouse = %d\nauto_update = %d\n", v.aimAssist ? 1 : 0,
             v.subtitles ? 1 : 0, v.console ? 1 : 0, v.controller ? 1 : 0, v.buttonPrompts, v.mouseSensitivity, v.rawMouse ? 1 : 0, v.autoUpdate ? 1 : 0);
+        fprintf(file, "aim_toggle = %d\nads_sensitivity = %.2f\naim_blur = %d\n", v.aimToggle ? 1 : 0, v.adsSensitivity, v.aimBlur ? 1 : 0);
         fprintf(file, "[keys]\n");
         for (int i = 0; i < ActionCount; i++) fprintf(file, "key_%s = %d\n", ActionKeys[i], v.keys[i]);
         fclose(file);

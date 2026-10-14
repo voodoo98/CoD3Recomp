@@ -362,6 +362,11 @@ namespace
                     ImGui::Checkbox("Raw mouse input", &g_edit.rawMouse);
                     ImGui::SameLine();
                     ImGui::TextDisabled("(the mouse's own movement, without Windows' pointer speed and acceleration)");
+                    ImGui::SliderFloat("Sensitivity while aiming (ADS)", &g_edit.adsSensitivity, 0.1f, 5.0f, "%.2f");
+                    ImGui::TextDisabled("Times the mouse sensitivity while aiming down the sights.");
+                    ImGui::Checkbox("Toggle aim (ADS)", &g_edit.aimToggle);
+                    ImGui::SameLine();
+                    ImGui::TextDisabled("(one press aims down the sights, the next lets go)");
                     ImGui::Checkbox("Aim assist", &g_edit.aimAssist);
                     ImGui::SameLine();
                     ImGui::TextDisabled("(the game's own; takes effect after a restart)");
@@ -640,6 +645,26 @@ void Overlay::Render(ID3D11RenderTargetView* back, ID3D11Texture2D* backTexture,
 
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
+    {
+        // The overlay is drawn into the back buffer, which is the size the
+        // frame is drawn at and not always the size of the window it is
+        // shown in (a 4K frame in a window the desktop has no room for).
+        // ImGui reads the pointer in the window's pixels, so it is scaled
+        // to the back buffer's: otherwise the pointer is drawn where it is
+        // not, and what it is over is not what it clicks.
+        RECT client{};
+        ImGuiIO& io = ImGui::GetIO();
+        if (g_hwnd != nullptr && GetClientRect(g_hwnd, &client) && client.right > 0 && client.bottom > 0 &&
+            (client.right != int(width) || client.bottom != int(height)))
+        {
+            io.DisplaySize = ImVec2(float(width), float(height));
+            if (io.MousePos.x > -FLT_MAX / 2)
+            {
+                io.MousePos.x *= float(width) / float(client.right);
+                io.MousePos.y *= float(height) / float(client.bottom);
+            }
+        }
+    }
     ImGui::NewFrame();
     if (values.fpsOverlay || values.statsOverlay)
     {

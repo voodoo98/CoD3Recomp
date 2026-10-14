@@ -40,10 +40,11 @@ namespace Settings
         int modelDetail = 1;          // 0 the title's own level of detail (r_lodscale 1), 1 the most detailed models at every distance (r_lodscale 0)
         int aspectRatio = 0;          // the picture's shape in a level: 0 the console's 16:9, 1 the window's, 2 21:9, 3 32:9 (widescreen.cpp)
         int shadowQuality = 0;        // the shadow maps' size: 0 as the frame (the console's 512 times the frame's scale), 1 512, 2 1024, 3 2048, 4 4096 (render_resources.cpp)
+        bool aimBlur = true;          // depth of field while aiming down the sights
         bool consoleDepth = true;     // depth cut to the console's 24 bit float precision (no flickering surfaces; costs with MSAA)
         bool nativeCommands = true;   // the draws' state taken from the game's own D3D calls, the command stream run only for what the GPU still does (docs/native-d3d11-plan.md, N3-N4; on by default since all fifteen levels ran on it; after a restart)
         bool watchWrites = true;      // still textures and vertex buffers known unchanged by their pages, not hashed every frame (write_watch.h; on by default; after a restart)
-        int windowMode = 0;           // 0 windowed, 1 borderless full screen
+        int windowMode = 1;           // 0 windowed, 1 borderless full screen
         bool fpsOverlay = false;
         bool statsOverlay = false;    // the renderer's counters over the picture
         bool aimAssist = true;        // the title's own, through its config
@@ -52,6 +53,8 @@ namespace Settings
         bool controller = true;       // read a pad when one is there
         int buttonPrompts = 0;        // the prompts' buttons: 0 as the last used (pad or keyboard and mouse), 1 the pad's, 2 the keys (pc_prompts.cpp)
         float mouseSensitivity = 1.0f;   // the look's, both axes, 0.05 .. 5: 1 is 0.066 degrees a count (mouse_look.cpp); look_sensitivity in the ini
+        float adsSensitivity = 1.5f;     // the look's gain while aiming down the sights, times the mouse sensitivity
+        bool aimToggle = false;          // aiming down the sights on a press, not while held
         bool rawMouse = true;            // the mouse's own counts, not the pointer's travel
         bool autoUpdate = true;          // on start, a newer release from GitHub downloaded and started (updater.cpp)
         int keys[ActionCount] = {};

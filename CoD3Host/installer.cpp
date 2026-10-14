@@ -242,6 +242,8 @@ namespace
 
     bool AskYes(const char* question)
     {
+        if (GetConsoleWindow() == nullptr)
+            return MessageBoxA(nullptr, question, "Call of Duty 3 setup", MB_YESNO | MB_ICONQUESTION) == IDYES;
         printf("%s [y/N]: ", question);
         fflush(stdout);
         const std::string answer = ReadLine();
@@ -413,6 +415,14 @@ bool Installer::Locate(const fs::path& exeDirectory, const Source& source,
     std::string choice;
     if (!source.iso.empty()) choice = "1";
     else if (!source.folder.empty()) choice = "copy";
+    else if (GetConsoleWindow() == nullptr)
+    {
+        const int answer = MessageBoxW(nullptr,
+            L"Is Call of Duty 3 already installed?\n\nYes: choose its main folder.\nNo: install from your Xbox 360 disc image.",
+            L"Call of Duty 3 setup", MB_YESNOCANCEL | MB_ICONQUESTION);
+        if (answer == IDCANCEL) return false;
+        choice = answer == IDYES ? "2" : "1";
+    }
     else
     {
         printf("Is this a fresh install, or is the game already installed?\n");

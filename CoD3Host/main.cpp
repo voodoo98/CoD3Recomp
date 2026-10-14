@@ -159,6 +159,9 @@ namespace
 int main(int argc, char** argv)
 {
     SetThreadDescription(GetCurrentThread(), L"guest main");
+    // Without this, Windows at 200% scaling hands the program a 1920x1080
+    // desktop and stretches the window to fit, whatever resolution is chosen.
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     Log::Start();
     // Every exit goes through Kernel::Exit, which waits for a key when this
     // program owns the console. Started from Explorer that is the difference
@@ -252,6 +255,9 @@ int Run(int argc, char** argv)
             return 0;
         }
         fprintf(stderr, "Setup failed: %s\n", error.c_str());
+        // With no console window nobody would see that line.
+        if (GetConsoleWindow() == nullptr)
+            MessageBoxA(nullptr, ("Setup failed: " + error).c_str(), "Call of Duty 3", MB_OK | MB_ICONERROR);
         return 1;
     }
 

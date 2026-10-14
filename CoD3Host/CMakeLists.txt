@@ -42,6 +42,7 @@ add_executable(CoD3 WIN32
     "table_trace.cpp"
     "anim_heap_trace.cpp"
     "native_crt.cpp"
+    "mouse_look.cpp"
     "probe.cpp"
     "timeline.cpp"
     "render_d3d11.cpp"
@@ -88,10 +89,10 @@ add_executable(CoD3 WIN32
     "updater.cpp"
     "resources/CoD3.rc")
 
-# A console application: setup is interactive and the import trap has to be
-# readable. WIN32 above is overridden here deliberately. The file it makes is
-# CoD3SP_s.exe (the target keeps its name for the build commands).
-set_target_properties(CoD3 PROPERTIES WIN32_EXECUTABLE OFF OUTPUT_NAME "CoD3SP_s")
+# Keep the release executable name and updater version, with the local
+# window-only startup. Diagnostics still go to CoD3.log.
+set_target_properties(CoD3 PROPERTIES WIN32_EXECUTABLE ON OUTPUT_NAME "CoD3SP_s")
+target_link_options(CoD3 PRIVATE /ENTRY:mainCRTStartup)
 
 # The version, which the updater holds against the newest release on GitHub
 # (updater.cpp) and the executable's version information shows: one header

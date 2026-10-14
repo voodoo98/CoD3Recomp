@@ -23,12 +23,13 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
 
 $LlvmBin = 'C:\Program Files\LLVM\bin'
+$CMakeBin = 'C:\Program Files\CMake\bin'
 $VsInstaller = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer'
 $VcVars = @(
     'C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat'
     'C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat'
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-$env:PATH = "$VsInstaller;$LlvmBin;$env:PATH"
+$env:PATH = "$VsInstaller;$LlvmBin;$CMakeBin;$env:PATH"
 
 function Invoke-InVsEnv([string]$Command) {
     $previous = $ErrorActionPreference

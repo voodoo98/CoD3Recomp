@@ -109,7 +109,21 @@ namespace
             if (w != SIZE_MINIMIZED) ReportSize(window);
             return 0;
         }
-        if (message == WM_CLOSE || message == WM_DESTROY)
+        // The window's close button ends the whole program, as Ctrl+C in the
+        // console did: without one, the game's own threads and the sound would
+        // carry on behind a window that is gone.
+        if (message == WM_CLOSE)
+        {
+            g_running.store(false);
+            // Not ExitProcess: it runs every DLL's shutdown while the game's
+            // threads still run, and that waits forever. The system frees
+            // the sound and the rest when the process is ended outright.
+            fflush(stdout);
+            fflush(stderr);
+            TerminateProcess(GetCurrentProcess(), 0);
+            return 0;
+        }
+        if (message == WM_DESTROY)
         {
             if (message == WM_CLOSE) g_closedByPlayer.store(true);
             g_running.store(false);
