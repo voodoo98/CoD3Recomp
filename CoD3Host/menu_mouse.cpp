@@ -40,6 +40,16 @@
 
 extern "C" PPC_FUNC(__imp__sub_824EE2E0);
 
+// The engine registers this function as "quit" at 0x82538378. The console
+// shutdown stops drawing before reaching its platform termination path,
+// leaving the PC window black. End the host through the same path as a
+// player closing the window, before the console teardown can stall.
+PPC_FUNC(sub_82536610)
+{
+    printf("menu: engine Quit taken\n");
+    Kernel::Quit();
+}
+
 namespace
 {
     constexpr uint32_t View2D = 0x8290E9AC;     // the view the 2D drawing goes through: +560 x scale, +576 y scale, +608 offset (the log)
@@ -698,6 +708,22 @@ bool MenuMouse::MenuUp() { return GetTickCount64() - g_menuUpAt.load(std::memory
 bool MenuMouse::PointerOverEntry() { return MenuUp() && g_overEntry.load(std::memory_order_relaxed); }
 bool MenuMouse::TitleScreen() { return MenuUp() && g_menuVtable.load(std::memory_order_relaxed) == 0x82071724u; }   // TitleMenu
 
+// MainMenu::ActivateEntry, vtable +72. Intercept the actual activation of
+// the Marketplace entry renamed Quit, rather than inferring it from the
+// last pad press. The title can consume that press before the next update.
+extern "C" PPC_FUNC(__imp__sub_824C40B8);
+PPC_FUNC(sub_824C40B8)
+{
+    const uint32_t menu = ctx.r3.u32;
+    if (menu != 0 && Guest::Read32(base, menu) == MainMenuVtable && ctx.r4.u32 == 4 &&
+        Guest::Read32(base, menu + 60) != 0 && Guest::Read8(base, menu + 72) == 0)
+    {
+        printf("menu: main menu Quit activated\n");
+        Kernel::Quit();
+    }
+    __imp__sub_824C40B8(ctx, base);
+}
+
 PPC_FUNC(sub_824EE2E0)
 {
     static const bool logging = getenv("COD3_MENULOG") != nullptr;
@@ -723,33 +749,6 @@ PPC_FUNC(sub_824EE2E0)
             fflush(stdout);
         }
     }
-    // Quit, in the main menu's last place (pc_prompts.cpp names it): taken
-    // with A, the window is closed, which ends the game; the title does not
-    // see the A (its Marketplace would open over the closing).
-    static bool quitting = false;
-    if (system != 0 && !quitting)
-    {
-        // A pressed lately, and not yet taken here.
-        static uint64_t taken = 0;
-        const uint64_t pressedAt = Input::PressedAt(0x1000);
-        const bool a = pressedAt != 0 && pressedAt != taken && GetTickCount64() - pressedAt < 200;
-        const int32_t active = int32_t(Guest::Read32(base, system + SystemActive));
-        const uint32_t menus = Guest::Read32(base, system + SystemMenus);
-        const uint32_t menu = active >= 0 && active < int32_t(Guest::Read32(base, system + SystemCount)) && menus != 0
-            ? Guest::Read32(base, menus + uint32_t(active) * 4) : 0;
-        if (menu != 0 && Guest::Read32(base, menu) == MainMenuVtable && a)
-        {
-            taken = pressedAt;
-            const int count = Read16s(base, menu + MenuCount);
-            if (count == 5 && Read16s(base, menu + MenuSelected) == count - 1 && Guest::Read8(base, menu + MenuLocked) == 0)
-            {
-                printf("menu: Quit taken\n");
-                quitting = true;
-                Window::RequestClose();
-            }
-        }
-    }
-    if (quitting) return;
     VideoMenu::Frame(ctx, base, system);
     if (system != 0 && !off)
     {

@@ -3,6 +3,7 @@
 #include "updater.h"
 #include "kernel.h"
 #include "settings.h"
+#include "localization.h"
 #include <cstdlib>
 #include "scheduler.h"
 #include "sampler.h"
@@ -275,6 +276,8 @@ int Run(int argc, char** argv)
     // The file imports resolve guest paths under the main folder, and put
     // anything the title writes in its save folder.
     Guest::GameRoot = game.root;
+    Settings::Load(exeDirectory, Localization::HasHungarian(game.root));
+    Localization::Initialize(game.root, Settings::Get().textLanguage);
     Kernel::InitializeFileSystem(game.root, exeDirectory);
 
     if (!Guest::Initialize(game.executable.string().c_str()))

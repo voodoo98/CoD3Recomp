@@ -35,3 +35,5 @@ shots/
 
 # Python bytecode.
 __pycache__/
+
+localization/game_hu

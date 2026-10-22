@@ -6,8 +6,12 @@
 
 #include "heap_trace.h"
 #include "kernel.h"
+#include "settings.h"
 
+#include <algorithm>
 #include <cstdlib>
+#include <cstring>
+#include <unordered_map>
 
 // --- a destructor that runs twice ------------------------------------------------------------------
 //
@@ -74,4 +78,59 @@ PPC_FUNC(sub_824EEBA0)
     static const bool consoleWay = getenv("COD3_NOFILMSKIP") != nullptr;
     if (!consoleWay) Guest::Write32(base, 0x82A2A258u, 0);   // 0.0f
     __imp__sub_824EEBA0(ctx, base);
+}
+
+// --- the field of view while aiming down the sights (a PC addition) ---------------------------------
+//
+// CG_CalcFov, sub_8243A198, returns the view's field of view. The hip value
+// is the title's cg_fov; while aiming it moves toward the weapon's own
+// adsZoomFov (a float at 1600 in the weapon, which the weapon file sets, so
+// cg_fov never reaches it) as far as the aim has come. The settings' "field
+// of view while aiming" is a per cent of that value, written into the weapon
+// in memory: the firing weapon's, found as the function itself finds it
+// (the weapon table at 0x82A99E2C, one entry per 5840 bytes of the client's
+// state, the client's number at 0x82A2A1C8). A scope's zoom (below
+// ScopeBelow degrees) is left as it is, since its picture is a drawn overlay
+// that a wider view would not fit, and the result never goes past the hip
+// field of view. What was in the weapon is kept, and is put back at 100.
+namespace
+{
+    struct AdsFov { float original; uint32_t written; };
+
+    float AsFloat(uint32_t bits) { float value; memcpy(&value, &bits, sizeof(value)); return value; }
+    uint32_t AsBits(float value) { uint32_t bits; memcpy(&bits, &value, sizeof(bits)); return bits; }
+}
+
+extern "C" PPC_FUNC(__imp__sub_8243A198);
+PPC_FUNC(sub_8243A198)
+{
+    constexpr uint32_t ClientNumber = 0x82A2A1C8, WeaponTable = 0x82A99E2C, ClientSize = 5840, AdsZoomFov = 1600;
+    constexpr float ScopeBelow = 30.0f;
+    static std::unordered_map<uint32_t, AdsFov> kept;
+
+    const uint32_t client = Guest::Read32(base, ClientNumber);
+    if (client < 4)
+    {
+        const uint32_t weapon = Guest::Read32(base, WeaponTable + client * ClientSize);
+        if (weapon >= 0x10000 && weapon < 0xFFFF0000u)
+        {
+            const Settings::Values settings = Settings::Get();
+            const uint32_t now = Guest::Read32(base, weapon + AdsZoomFov);
+            AdsFov& entry = kept[weapon];
+            // Not what was written last: the weapon is a fresh load, or never seen.
+            if (entry.written == 0 || entry.written != now) entry = { AsFloat(now), 0 };
+            float target = entry.original;
+            if (settings.adsFov > 100 && entry.original >= ScopeBelow)
+                target = std::min(entry.original * float(settings.adsFov) / 100.0f, std::max(entry.original, float(settings.fov)));
+            const uint32_t bits = AsBits(target);
+            if (bits != now)
+            {
+                Guest::Write32(base, weapon + AdsZoomFov, bits);
+                printf("title: weapon %08X aims at %.1f degrees (the file's %.1f)\n", weapon, target, entry.original);
+                fflush(stdout);
+            }
+            entry.written = bits;
+        }
+    }
+    __imp__sub_8243A198(ctx, base);
 }

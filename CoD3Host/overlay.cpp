@@ -1,6 +1,7 @@
 #include "overlay.h"
 #include "kernel.h"
 #include "settings.h"
+#include "localization.h"
 #include "render_stats.h"
 #include "render.h"
 
@@ -328,6 +329,7 @@ namespace
                     ImGui::SameLine();
                     ImGui::TextDisabled("(the shadow maps' size; the console's is 512)");
                     ImGui::SliderInt("Field of view", &g_edit.fov, 65, 100, g_edit.fov == 65 ? "65 (the game's own)" : "%d");
+                    ImGui::SliderInt("Field of view while aiming (%)", &g_edit.adsFov, 100, 250, g_edit.adsFov == 100 ? "100 (the weapon's own)" : "%d");
                     const char* details[] = { "The game's own", "Maximum" };
                     ImGui::Combo("Model detail", &g_edit.modelDetail, details, 2);
                     ImGui::SameLine();
@@ -348,6 +350,27 @@ namespace
                     ImGui::Checkbox("Subtitles", &g_edit.subtitles);
                     ImGui::SameLine();
                     ImGui::TextDisabled("(the game's own, as on its Gameplay page)");
+                    const char* languages[] = { "English", "Magyar" };
+                    if (ImGui::BeginCombo("Text language", languages[g_edit.textLanguage]))
+                    {
+                        for (int language = 0; language < 2; language++)
+                        {
+                            ImGui::BeginDisabled(language == Localization::Hungarian && !Localization::HasHungarian());
+                            const bool selected = g_edit.textLanguage == language;
+                            if (ImGui::Selectable(languages[language], selected)) g_edit.textLanguage = language;
+                            if (selected) ImGui::SetItemDefaultFocus();
+                            ImGui::EndDisabled();
+                        }
+                        ImGui::EndCombo();
+                    }
+                    ImGui::TextDisabled("Menus, objectives and subtitles.");
+                    ImGui::TextWrapped(g_edit.textLanguage == Localization::Hungarian
+                        ? "A nyelvváltás után újra kell indítani a játékot. Előbb kattints az Apply gombra."
+                        : "Apply the selected language, then restart the game.");
+                    if (applied.textLanguage != Localization::ActiveLanguage())
+                        ImGui::TextUnformatted("Restart the game to apply the selected language.");
+                    if (!Localization::HasHungarian())
+                        ImGui::TextDisabled("Magyar requires the Hungarian translation and its original English backups.");
                     ImGui::Checkbox("Console", &g_edit.console);
                     ImGui::SameLine();
                     ImGui::TextDisabled("(opened with the key left of 1)");
@@ -539,6 +562,7 @@ namespace
 {
     // The front end's pages seen this frame and the last, as bits.
     std::atomic<uint32_t> g_frontEndNow{ 0 };
+    std::atomic<bool> g_startScreen{ true };
     uint32_t g_frontEndLast = 0;
 }
 
@@ -553,9 +577,14 @@ void Overlay::NoteFrame()
 void Overlay::NoteFrontEndText(FrontEndText text)
 {
     g_frontEndNow.fetch_or(uint32_t(text), std::memory_order_relaxed);
+    // Keep the last page while PRESS START blinks or a transition draws no
+    // text. It asks for Start; the main menu and its submenus ask for A.
+    if (text == FrontEndText::StartScreen) g_startScreen.store(true);
+    else if (text == FrontEndText::MainMenu) g_startScreen.store(false);
 }
 
 bool Overlay::IsOpen() { return g_open.load() || g_console.load(); }
+bool Overlay::IsStartScreen() { return g_startScreen.load(); }
 
 void Overlay::Toggle()
 {

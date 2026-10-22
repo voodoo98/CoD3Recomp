@@ -6,6 +6,7 @@
 // the executable instead, so nothing ever modifies the installed copy.
 
 #include "kernel.h"
+#include "localization.h"
 #include "write_watch.h"
 #include <vector>
 #include "scheduler.h"
@@ -230,7 +231,8 @@ namespace
         // like any other file name coming from data.
         if (relative.find("..") != std::string::npos) return {};
 
-        return (forWriting ? g_savesRoot : Guest::GameRoot) / fs::path(relative);
+        if (forWriting) return g_savesRoot / fs::path(relative);
+        return Localization::ReadPath(Guest::GameRoot / fs::path(relative));
     }
 
     fs::path FindExisting(const fs::path& wanted);
@@ -900,7 +902,7 @@ PPC_FUNC(__imp__NtQueryDirectoryFile)
         {
             std::error_code sizeError;
             const uint64_t size = entry.is_directory(sizeError)
-                ? 0 : uint64_t(entry.file_size(sizeError));
+                ? 0 : uint64_t(fs::file_size(Localization::ReadPath(entry.path()), sizeError));
             file.entries.emplace_back(entry.path().filename().string(),
                 entry.is_directory(sizeError) ? UINT64_MAX : size);
         }

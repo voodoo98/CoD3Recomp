@@ -37,6 +37,7 @@ namespace Settings
         int antialiasing = 3;         // 0 none, 1 FXAA, 2 MSAA 2x, 3 MSAA 4x, 4 MSAA 8x, 5 MSAA 4x and FXAA
         int textureQuality = 2;       // 0 low (two mip levels dropped), 1 medium (one), 2 high (all)
         int fov = 65;                 // the title's cg_fov, 65 (its own) .. 100
+        int adsFov = 100;             // per cent of each weapon's own adsZoomFov when aiming down the sights, 100 (its own) .. 250; scopes are left alone
         int modelDetail = 1;          // 0 the title's own level of detail (r_lodscale 1), 1 the most detailed models at every distance (r_lodscale 0)
         int aspectRatio = 0;          // the picture's shape in a level: 0 the console's 16:9, 1 the window's, 2 21:9, 3 32:9 (widescreen.cpp)
         int shadowQuality = 0;        // the shadow maps' size: 0 as the frame (the console's 512 times the frame's scale), 1 512, 2 1024, 3 2048, 4 4096 (render_resources.cpp)
@@ -49,6 +50,7 @@ namespace Settings
         bool statsOverlay = false;    // the renderer's counters over the picture
         bool aimAssist = true;        // the title's own, through its config
         bool subtitles = true;        // the title's cg_subtitles (on by default there too)
+        int textLanguage = 0;          // 0 English, 1 Magyar; all game text, after restart
         bool console = false;         // the key left of 1 opens the console (the host's: the title's own was left out of this build)
         bool controller = true;       // read a pad when one is there
         int buttonPrompts = 0;        // the prompts' buttons: 0 as the last used (pad or keyboard and mouse), 1 the pad's, 2 the keys (pc_prompts.cpp)
@@ -79,7 +81,7 @@ namespace Settings
     void Set(const Values& values);
 
     // Reads the file beside the executable, or starts from the defaults.
-    void Load(const std::filesystem::path& exeDirectory);
+    void Load(const std::filesystem::path& exeDirectory, bool hungarianAvailable = false);
     void Save();
 
     // The console commands the settings ask of the title (the field of

@@ -1031,6 +1031,8 @@ void Kernel::Exit(int code)
 void Kernel::Quit()
 {
     printf("exit: the game was closed\n");
+    fflush(stdout);
+    fflush(stderr);
     Log::Finish();
     // Not ExitProcess: that stops the other threads where they stand and
     // then runs the exit handlers, which print, and a thread stopped while

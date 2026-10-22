@@ -17,6 +17,7 @@
 // is the largest single piece of work left in this project.
 
 #include "kernel.h"
+#include "hungarian_fonts.h"
 #include "sampler.h"
 #include "audio_out.h"
 #include "scheduler.h"
@@ -1277,6 +1278,7 @@ void Kernel::ReportPoolWaits()
 
 PPC_FUNC(__imp__VdSwap)
 {
+    HungarianFonts::Update();
     Kernel::CountImport("VdSwap");
     // VdSwap is where the title hands over a finished frame. Its arguments
     // name the buffer, so the first few are reported in full: that address is

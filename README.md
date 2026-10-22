@@ -79,7 +79,7 @@ turns that off for anyone who wants the pointer's travel back.
 | B | binoculars |
 | Tab | objectives (held) |
 | Escape | pause |
-| Enter, arrows | the menus |
+| Enter / Space, arrows | confirm and navigate the menus |
 | F11 | settings menu |
 | F12 | screenshot into `screenshots/`, the next two frames' draws into `CoD3.log`, and a small picture after each draw of the next frame (`screenshots/*-draws.bin`): press it when something looks wrong |
 | ` (the key left of 1) | the console, when the settings' Gameplay page turns it on |
@@ -94,6 +94,11 @@ makes a level wider than the console's 16:9 (21:9, 32:9, or as the window
 is): more is seen to either side, and the HUD keeps its shape in the
 middle. The shadow quality sets the shadow maps' size apart from the
 frame's (the console's are 512 square).
+
+In F11 > Gameplay, **Text language** selects **English** or **Magyar** for menus,
+objectives and subtitles. Press Apply and restart the game to change language.
+Magyar requires the installed Hungarian translation and its English `.cod.orig`
+backups. Switching language leaves both sets of game files intact.
 
 The settings menu (F11) has the window
 mode (windowed or borderless full screen; Alt+Enter switches too), the

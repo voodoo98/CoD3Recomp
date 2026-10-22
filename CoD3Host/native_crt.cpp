@@ -4,9 +4,30 @@
 // runtime, so each copy is named here.
 
 #include "kernel.h"
+#include "localization.h"
 
 #include <cstdlib>
 #include <cstring>
+
+// The linked printf core serves snprintf and vsnprintf, including the weapon
+// HUD's formatting before its button tokens are expanded. Only bounded string
+// streams and the Hungarian swap template are changed. No bytes are added.
+extern "C" PPC_FUNC(__imp__sub_82353B58);
+PPC_FUNC(sub_82353B58)
+{
+    const uint32_t stream = ctx.r3.u32, format = ctx.r4.u32;
+    const bool candidate = Localization::ActiveLanguage() == Localization::Hungarian && stream != 0 && format != 0 &&
+        (Guest::Read32(base, stream + 12) & 0x40) != 0 &&
+        strstr(reinterpret_cast<const char*>(base + format), " csere ") != nullptr;
+    const uint32_t buffer = candidate ? Guest::Read32(base, stream) : 0;
+    const uint32_t capacity = candidate ? Guest::Read32(base, stream + 4) : 0;
+    __imp__sub_82353B58(ctx, base);
+    if (buffer != 0 && ctx.r3.s32 >= 0 && ctx.r3.u32 <= capacity)
+    {
+        std::string text(reinterpret_cast<const char*>(base + buffer), ctx.r3.u32);
+        if (Localization::FixWeaponSwapPrompt(text)) memcpy(base + buffer, text.data(), text.size());
+    }
+}
 
 // --- memset ----------------------------------------------------------------------------------------
 //

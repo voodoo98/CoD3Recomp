@@ -25,6 +25,7 @@
 #include "menu_mouse.h"
 #include "render.h"
 #include "settings.h"
+#include "localization.h"
 
 #include <Windows.h>
 
@@ -277,6 +278,22 @@ PPC_FUNC(sub_82527FD0)
 constexpr uint32_t ExpandPlaceholder = 0x824DD9A8;
 namespace Mmio { void CallIndirect(PPCContext& ctx, uint8_t* base, uint32_t address); }
 
+// Both weapon-swap templates contain button placeholders. Correct the complete
+// prompt after the title expands them, when the target weapon is known. Only
+// one existing byte changes, so the title's own buffer and layout remain valid.
+extern "C" PPC_FUNC(__imp__sub_824DD9A8);
+PPC_FUNC(sub_824DD9A8)
+{
+    __imp__sub_824DD9A8(ctx, base);
+    if (Localization::ActiveLanguage() != Localization::Hungarian || ctx.r3.u32 == 0) return;
+    char* const text = reinterpret_cast<char*>(base + ctx.r3.u32);
+    if (strncmp(text, "Tartsd nyomva ", 13) != 0 && strncmp(text, "[HOLD_USE]-t a ", 14) != 0) return;
+    const size_t length = strnlen(text, 4096);
+    if (length == 4096) return;
+    std::string corrected(text, length);
+    if (Localization::FixWeaponSwapPrompt(corrected)) memcpy(text, corrected.data(), corrected.size());
+}
+
 void PcPrompts::ExpandTest(PPCContext& ctx, uint8_t* base)
 {
     static const bool wanted = getenv("COD3_EXPANDTEST") != nullptr;
@@ -284,7 +301,10 @@ void PcPrompts::ExpandTest(PPCContext& ctx, uint8_t* base)
     static const uint64_t start = GetTickCount64();
     if (!wanted || done || GetTickCount64() - start < 20000) return;
     done = true;
-    const char* const placeholders[] = { "[VERB_MELEE]", "[VERB_STANCE_DOWN]", "[VERB_STANCE_UP]", "[VERB_GRENADE]", "[PRESS_MELEE]", "[MELEE]" };
+    const char* const placeholders[] = {
+        "[VERB_MELEE]", "[VERB_STANCE_DOWN]", "[VERB_STANCE_UP]", "[VERB_GRENADE]", "[PRESS_MELEE]", "[MELEE]",
+        "[HOLD_USE]-t a MP40 csere Kar98k-re", "[HOLD_USE]-t a Kar98k csere MP40-ra"
+    };
     const uint32_t text = Guest::AllocateKernelObject(64);
     for (const char* placeholder : placeholders)
     {
@@ -302,6 +322,24 @@ void PcPrompts::ExpandTest(PPCContext& ctx, uint8_t* base)
             out += char(c);
         }
         printf("expand: %s -> \"%s\"\n", placeholder, out.c_str());
+        fflush(stdout);
+    }
+    // The real linked snprintf, before button-token expansion. This covers
+    // the ordering used by the weapon HUD, in both swap directions.
+    const uint32_t probe = Guest::AllocateKernelObject(512);
+    if (probe == 0) return;
+    const char* format = "[HOLD_USE]-t a %s csere %s-re";
+    memcpy(base + probe, format, strlen(format) + 1);
+    const char* weapons[] = { "Kar98k", "MP40" };
+    for (unsigned i = 0; i < 2; ++i)
+    {
+        memcpy(base + probe + 128, weapons[i], strlen(weapons[i]) + 1);
+        memcpy(base + probe + 160, weapons[1 - i], strlen(weapons[1 - i]) + 1);
+        PPCContext call = ctx;
+        call.r3.u64 = probe + 256; call.r4.u64 = 128; call.r5.u64 = probe;
+        call.r6.u64 = probe + 128; call.r7.u64 = probe + 160;
+        Mmio::CallIndirect(call, base, 0x8234C6D8);
+        printf("format: swap target %s -> \"%s\"\n", weapons[1 - i], reinterpret_cast<char*>(base + probe + 256));
         fflush(stdout);
     }
 }

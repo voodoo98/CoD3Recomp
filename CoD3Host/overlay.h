@@ -26,6 +26,7 @@ namespace Overlay
     // The settings menu or the console is up: the keys and the mouse are
     // theirs, not the title's.
     bool IsOpen();
+    bool IsStartScreen();
     void Toggle();
     void ToggleConsole();
 
@@ -39,6 +40,6 @@ namespace Overlay
     // What the front end drew this frame (title_trace.cpp): the main
     // menu, or its options page. The settings menu opens itself when the
     // options page follows the main menu, which is the OPTIONS entry.
-    enum class FrontEndText { MainMenu = 1, OptionsMenu = 2 };
+    enum class FrontEndText { MainMenu = 1, OptionsMenu = 2, StartScreen = 4 };
     void NoteFrontEndText(FrontEndText text);
 }

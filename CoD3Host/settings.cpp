@@ -121,10 +121,13 @@ void Settings::Set(const Values& values)
     Save();
 }
 
-void Settings::Load(const std::filesystem::path& exeDirectory)
+void Settings::Load(const std::filesystem::path& exeDirectory, bool hungarianAvailable)
 {
     g_file = exeDirectory / "CoD3Recomp.ini";
     Values v = Defaults();
+    // Existing Hungarian installations keep their language when upgrading
+    // from an INI that predates the selector.
+    v.textLanguage = hungarianAvailable ? 1 : 0;
     if (FILE* file = _wfopen(g_file.c_str(), L"rb"))
     {
         char line[512];
@@ -150,6 +153,7 @@ void Settings::Load(const std::filesystem::path& exeDirectory)
             else if (key == "antialiasing") v.antialiasing = atoi(value.c_str());
             else if (key == "texture_quality") v.textureQuality = atoi(value.c_str());
             else if (key == "fov") v.fov = atoi(value.c_str());
+            else if (key == "ads_fov") v.adsFov = atoi(value.c_str());
             else if (key == "model_detail") v.modelDetail = atoi(value.c_str());
             else if (key == "shadow_quality") v.shadowQuality = atoi(value.c_str());
             else if (key == "aspect_ratio") v.aspectRatio = atoi(value.c_str());
@@ -162,6 +166,7 @@ void Settings::Load(const std::filesystem::path& exeDirectory)
             else if (key == "stats_overlay") v.statsOverlay = atoi(value.c_str()) != 0;
             else if (key == "aim_assist") v.aimAssist = atoi(value.c_str()) != 0;
             else if (key == "subtitles") v.subtitles = atoi(value.c_str()) != 0;
+            else if (key == "text_language") v.textLanguage = value == "hu" ? 1 : 0;
             else if (key == "console") v.console = atoi(value.c_str()) != 0;
             else if (key == "controller") v.controller = atoi(value.c_str()) != 0;
             else if (key == "button_prompts") v.buttonPrompts = std::clamp(atoi(value.c_str()), 0, 2);
@@ -188,11 +193,13 @@ void Settings::Load(const std::filesystem::path& exeDirectory)
     if (v.antialiasing < 0 || v.antialiasing > 5) v.antialiasing = 3;
     if (v.textureQuality < 0 || v.textureQuality > 2) v.textureQuality = 2;
     if (v.fov < 65 || v.fov > 100) v.fov = 65;
+    if (v.adsFov < 100 || v.adsFov > 250) v.adsFov = 100;
     if (v.modelDetail < 0 || v.modelDetail > 1) v.modelDetail = 1;
     if (v.shadowQuality < 0 || v.shadowQuality > 4) v.shadowQuality = 0;
     if (v.aspectRatio < 0 || v.aspectRatio > 3) v.aspectRatio = 0;
     if (v.windowMode < 0 || v.windowMode > 1) v.windowMode = 0;
     if (!(v.mouseSensitivity >= 0.05f && v.mouseSensitivity <= 5.0f)) v.mouseSensitivity = 1.0f;
+    if (!hungarianAvailable) v.textLanguage = 0;
     if (!(v.adsSensitivity >= 0.1f && v.adsSensitivity <= 5.0f)) v.adsSensitivity = 1.5f;
     std::lock_guard<std::mutex> lock(g_mutex);
     g_values = v;
@@ -208,11 +215,12 @@ void Settings::Save()
         char resolution[32];
         if (v.resolutionWidth > 0 && v.resolutionHeight > 0) snprintf(resolution, sizeof(resolution), "%dx%d", v.resolutionWidth, v.resolutionHeight);
         else snprintf(resolution, sizeof(resolution), "desktop");
-        fprintf(file, "[graphics]\nrenderer = %d\nresolution = %s\nresolution_scale = %d\ntexture_filter = %d\nanisotropy = %d\nvsync = %d\nunlock_frame_rate = %d\nantialiasing = %d\ntexture_quality = %d\nfov = %d\nmodel_detail = %d\nshadow_quality = %d\naspect_ratio = %d\nconsole_depth = %d\nnative_commands = %d\nwatch_writes = %d\nwindow_mode = %d\nfps_overlay = %d\nstats_overlay = %d\n",
-            v.renderer, resolution, v.resolutionScale, v.textureFilter, v.anisotropy, v.vsync ? 1 : 0, v.unlockFrameRate ? 1 : 0, v.antialiasing, v.textureQuality, v.fov, v.modelDetail, v.shadowQuality, v.aspectRatio, v.consoleDepth ? 1 : 0, v.nativeCommands ? 1 : 0, v.watchWrites ? 1 : 0, v.windowMode, v.fpsOverlay ? 1 : 0, v.statsOverlay ? 1 : 0);
+        fprintf(file, "[graphics]\nrenderer = %d\nresolution = %s\nresolution_scale = %d\ntexture_filter = %d\nanisotropy = %d\nvsync = %d\nunlock_frame_rate = %d\nantialiasing = %d\ntexture_quality = %d\nfov = %d\nads_fov = %d\nmodel_detail = %d\nshadow_quality = %d\naspect_ratio = %d\nconsole_depth = %d\nnative_commands = %d\nwatch_writes = %d\nwindow_mode = %d\nfps_overlay = %d\nstats_overlay = %d\n",
+            v.renderer, resolution, v.resolutionScale, v.textureFilter, v.anisotropy, v.vsync ? 1 : 0, v.unlockFrameRate ? 1 : 0, v.antialiasing, v.textureQuality, v.fov, v.adsFov, v.modelDetail, v.shadowQuality, v.aspectRatio, v.consoleDepth ? 1 : 0, v.nativeCommands ? 1 : 0, v.watchWrites ? 1 : 0, v.windowMode, v.fpsOverlay ? 1 : 0, v.statsOverlay ? 1 : 0);
         fprintf(file, "[game]\naim_assist = %d\nsubtitles = %d\nconsole = %d\ncontroller = %d\nbutton_prompts = %d\nlook_sensitivity = %.2f\nraw_mouse = %d\nauto_update = %d\n", v.aimAssist ? 1 : 0,
             v.subtitles ? 1 : 0, v.console ? 1 : 0, v.controller ? 1 : 0, v.buttonPrompts, v.mouseSensitivity, v.rawMouse ? 1 : 0, v.autoUpdate ? 1 : 0);
         fprintf(file, "aim_toggle = %d\nads_sensitivity = %.2f\naim_blur = %d\n", v.aimToggle ? 1 : 0, v.adsSensitivity, v.aimBlur ? 1 : 0);
+        fprintf(file, "text_language = %s\n", v.textLanguage == 1 ? "hu" : "en");
         fprintf(file, "[keys]\n");
         for (int i = 0; i < ActionCount; i++) fprintf(file, "key_%s = %d\n", ActionKeys[i], v.keys[i]);
         fclose(file);

@@ -230,7 +230,10 @@ PPC_FUNC(sub_824CFBE8)
         {
             const char* characters = Text(base, text + 12);
             if (strcmp(characters, "OPTIONS MENU") == 0) Overlay::NoteFrontEndText(Overlay::FrontEndText::OptionsMenu);
-            else if (strcmp(characters, "SINGLE PLAYER") == 0) Overlay::NoteFrontEndText(Overlay::FrontEndText::MainMenu);
+            else if (strcmp(characters, "SINGLE PLAYER") == 0 || strcmp(characters, "EGYJ\xC1T\xC9KOS") == 0)
+                Overlay::NoteFrontEndText(Overlay::FrontEndText::MainMenu);
+            else if (strcmp(characters, "PRESS START") == 0 || strcmp(characters, "START GOMB") == 0)
+                Overlay::NoteFrontEndText(Overlay::FrontEndText::StartScreen);
         }
     }
     __imp__sub_824CFBE8(ctx, base);

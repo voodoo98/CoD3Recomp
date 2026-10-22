@@ -565,12 +565,24 @@ namespace
         };
 
         for (const Mapping& mapping : mappings)
+        {
+            // Enter and Space are reserved for confirmation while in a menu,
+            // even if a gameplay action is rebound to either of them.
+            if (!held && (mapping.key == VK_RETURN || mapping.key == VK_SPACE)) continue;
             if (mapping.key != 0 && Down(mapping.key)) pad.buttons |= mapping.button;
-        // Enter is Start, and in a menu of the title's own A, as its prompts
-        // say (pc_prompts.cpp): Start and A at once took an entry and closed
-        // the pause menu together. The title screen wants Start.
-        const bool titleScreen = MenuMouse::TitleScreen();
-        if (Down(VK_RETURN)) pad.buttons |= (menuUp && !held) ? uint16_t(PadA | (titleScreen ? PadStart : 0)) : PadStart;
+        }
+
+        // Start and A together are ignored by some front-end pages. The
+        // initial screen needs Start; every menu after it needs only A,
+        // exactly as a click does. Keep that choice until release so one
+        // press cannot start the title and select a menu entry as well.
+        static bool confirming = false;
+        static uint16_t confirmButton = PadA;
+        const bool confirmDown = !held && (Down(VK_RETURN) || Down(VK_SPACE));
+        if (confirmDown && !confirming) confirmButton = MenuMouse::TitleScreen() ? PadStart : PadA;
+        if (confirmDown) pad.buttons |= confirmButton;
+        confirming = confirmDown;
+        if (held && Down(VK_RETURN)) pad.buttons |= PadStart;
         // Pause, when it is not the Escape that frees the mouse (below).
         if (inLevel && keys.keys[Settings::Pause] != 0 && keys.keys[Settings::Pause] != VK_ESCAPE && Down(keys.keys[Settings::Pause]))
             pad.buttons |= PadStart;
@@ -586,10 +598,6 @@ namespace
             if (wheelReadsLeft > 0) { pad.buttons |= PadY; wheelReadsLeft--; }
         }
 
-        // The title's first screen waits for Start, and asking a player to know
-        // that is asking them to guess. While the mouse is free, which is every
-        // menu, Space is Start as well as A.
-        if (!held && Down(VK_SPACE) && (!menuUp || titleScreen)) pad.buttons |= PadStart;
         // In a menu of the title's own, Escape goes back as its B does, once
         // a press (the press that let the pointer go and opened the pause
         // menu is not one), held for a few reads so the title's poll sees it.
@@ -601,6 +609,7 @@ namespace
             if (backReadsLeft > 0) { pad.buttons |= PadB; backReadsLeft--; }
         }
         if (!held && Down(VK_ESCAPE) && !inLevel && !menuUp) pad.buttons |= PadBack;
+        if (!held && Down(VK_BACK)) pad.buttons |= PadB;
         if (inLevel && startReadsLeft > 0) { pad.buttons |= PadStart; startReadsLeft--; }
 
         // Driving a menu with the mouse.
@@ -834,6 +843,6 @@ uint32_t Input::PacketNumber()
 
 const char* Input::KeyboardHelp()
 {
-    return "Enter or Space start, mouse moves the menu and clicks to choose, "
+    return "Enter or Space choose, mouse moves the menu and clicks to choose, "
            "F1 steers with it, Escape frees it";
 }
