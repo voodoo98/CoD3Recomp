@@ -768,7 +768,7 @@ namespace
             // the title sometimes walks its own menus with no one pressing
             // anything, and this says whether anything was pressed at all.
             static int announced = 0;
-            if (pad.buttons != g_pad.buttons && announced++ < 40)
+            if (pad.buttons != g_pad.buttons && (announced < 40 && announced++ < 40))
             {
                 printf("input: buttons 0x%04X (keyboard 0x%04X, script 0x%04X, pad 0x%04X, focus %d)\n",
                     pad.buttons, fromKeyboard, fromScript, fromPad, Window::HasFocus() ? 1 : 0);

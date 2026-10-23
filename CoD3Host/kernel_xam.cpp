@@ -78,7 +78,7 @@ PPC_FUNC(__imp__XamUserGetXUID)
 {
     Kernel::CountImport("XamUserGetXUID");
     static std::atomic<int> announced{ 0 };
-    if (announced.fetch_add(1) < 20)
+    if ((announced.load(std::memory_order_relaxed) < 20 && announced.fetch_add(1) < 20))
     {
         printf("xam: XamUserGetXUID(user %u, type 0x%X) from 0x%08X\n",
             ctx.r3.u32, ctx.r4.u32, uint32_t(ctx.lr));
@@ -103,7 +103,7 @@ PPC_FUNC(__imp__XamUserReadProfileSettings)
     const uint32_t sizePtr = ctx.r9.u32;
     const uint32_t buffer = ctx.r10.u32;
     static std::atomic<int> announced{ 0 };
-    if (announced.fetch_add(1) < 12)
+    if ((announced.load(std::memory_order_relaxed) < 12 && announced.fetch_add(1) < 12))
     {
         printf("xam: XamUserReadProfileSettings(title 0x%08X, user %u, xuids %u/0x%08X, %u settings:",
             ctx.r3.u32, ctx.r4.u32, ctx.r5.u32, ctx.r6.u32, settingCount);
@@ -184,7 +184,7 @@ PPC_FUNC(__imp__XamInputGetState)
         // through r13, and if this runtime never sets it up, everything it
         // reads through it is whatever happens to be at address zero.
         static std::atomic<int> looked{ 0 };
-        if (looked.fetch_add(1) < 3)
+        if ((looked.load(std::memory_order_relaxed) < 3 && looked.fetch_add(1) < 3))
         {
             const uint32_t pcr = ctx.r13.u32;
             printf("thread pointer r13 = 0x%08X", pcr);
@@ -937,7 +937,7 @@ PPC_FUNC(__imp__XMsgInProcessCall)
 {
     Kernel::CountImport("XMsgInProcessCall");
     static std::atomic<int> announced{ 0 };
-    if (announced.fetch_add(1) < 20)
+    if ((announced.load(std::memory_order_relaxed) < 20 && announced.fetch_add(1) < 20))
     {
         printf("xam: XMsgInProcessCall(app 0x%X, message 0x%X, 0x%08X, 0x%08X) from 0x%08X", 
             ctx.r3.u32, ctx.r4.u32, ctx.r5.u32, ctx.r6.u32, uint32_t(ctx.lr));

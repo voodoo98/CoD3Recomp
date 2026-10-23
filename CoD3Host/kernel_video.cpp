@@ -140,7 +140,9 @@ namespace
         // saying each (a line and a flush a few times a frame) was a
         // write to the log on the command processor's thread.
         static std::atomic<int> unusual{ 0 };
-        if (raised < 40 || (level && (usual ? inLevel.fetch_add(1) < 40 : unusual.fetch_add(1) < 40)))
+        if (raised < 40 || (level && (usual
+            ? (inLevel.load(std::memory_order_relaxed) < 40 && inLevel.fetch_add(1) < 40)
+            : (unusual.load(std::memory_order_relaxed) < 40 && unusual.fetch_add(1) < 40))))
         {
             printf("gpu: interrupt %llu on cpu %u, pending mask 0x%02X, callback "
                    "0x%08X%s\n", (unsigned long long)raised, cpu, pending, armed,
