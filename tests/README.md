@@ -19,3 +19,23 @@ punctuation, unchanged buffer length, and English-language isolation.
 `COD3_EXPANDTEST=1` additionally prints two weapon-swap examples through the
 running title's linked snprintf after twenty seconds, alongside the existing
 button-placeholder expansion probes.
+
+## Audio and graphics settings
+
+`audio_limiter_test.cpp` exercises the production limiter without an audio device:
+overload ceiling, linked speaker balance, gradual recovery, stereo volume, mute,
+bypass, and non-finite input. Build and run it with:
+
+```bat
+clang-cl /nologo /std:c++20 /EHsc tests/audio_limiter_test.cpp /Fe:build/audio-limiter-test.exe /Fo:build/audio-limiter-test.obj
+build\audio-limiter-test.exe
+```
+
+`av_settings_test.cpp` checks A/V defaults with an existing INI, persistence of
+HDR and optimization controls, preview without saving, bounds, and preservation
+of the existing language and input settings. It uses its own `av-settings` folder:
+
+```bat
+clang-cl /nologo /std:c++20 /EHsc /DNOMINMAX /D_CRT_SECURE_NO_WARNINGS tests/av_settings_test.cpp CoD3Host/settings.cpp /Fe:build/av-settings-test.exe /Fo:build/ /link user32.lib
+build\av-settings-test.exe build
+```

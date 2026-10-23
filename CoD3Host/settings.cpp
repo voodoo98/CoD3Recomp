@@ -121,6 +121,11 @@ void Settings::Set(const Values& values)
     Save();
 }
 
+void Settings::Preview(const Values& values)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    g_values = values;
+}
 void Settings::Load(const std::filesystem::path& exeDirectory, bool hungarianAvailable)
 {
     g_file = exeDirectory / "CoD3Recomp.ini";
@@ -147,6 +152,7 @@ void Settings::Load(const std::filesystem::path& exeDirectory, bool hungarianAva
             }
             else if (key == "resolution_scale") v.resolutionScale = atoi(value.c_str());
             else if (key == "texture_filter") v.textureFilter = atoi(value.c_str());
+            else if (key == "frame_cap") v.frameCap = std::clamp(atoi(value.c_str()), 0, 1000);
             else if (key == "anisotropy") v.anisotropy = atoi(value.c_str());
             else if (key == "vsync") v.vsync = atoi(value.c_str()) != 0;
             else if (key == "unlock_frame_rate") v.unlockFrameRate = atoi(value.c_str()) != 0;
@@ -159,8 +165,46 @@ void Settings::Load(const std::filesystem::path& exeDirectory, bool hungarianAva
             else if (key == "aspect_ratio") v.aspectRatio = atoi(value.c_str());
             else if (key == "aim_blur") v.aimBlur = atoi(value.c_str()) != 0;
             else if (key == "console_depth") v.consoleDepth = atoi(value.c_str()) != 0;
+            else if (key == "sharp_shadows") v.sharpShadows = atoi(value.c_str()) != 0;
+            else if (key == "full_res_effects") v.effectsResolution = atoi(value.c_str()) != 0 ? 2 : 0;   // the older on/off key
+            else if (key == "effects_resolution") v.effectsResolution = atoi(value.c_str());
+            else if (key == "foliage_coverage") v.foliageCoverage = atoi(value.c_str()) != 0;
+            else if (key == "fast_shadow_maps") v.fastShadowMaps = atoi(value.c_str()) != 0;
+            else if (key == "steady_decals") v.steadyDecals = atoi(value.c_str()) != 0;
             else if (key == "native_commands") v.nativeCommands = atoi(value.c_str()) != 0;
             else if (key == "watch_writes") v.watchWrites = atoi(value.c_str()) != 0;
+            else if (key == "film_video_levels") v.filmVideoLevels = atoi(value.c_str()) != 0;
+            else if (key == "opt_fast_constants") v.fastConstants = atoi(value.c_str()) != 0;
+            else if (key == "opt_shader_load_cache") v.shaderLoadCache = atoi(value.c_str()) != 0;
+            else if (key == "opt_strong_change_check") v.strongChangeCheck = atoi(value.c_str()) != 0;
+            else if (key == "opt_range_looks") v.rangeLooks = atoi(value.c_str()) != 0;
+            else if (key == "opt_opaque_shaders") v.opaqueShaders = atoi(value.c_str()) != 0;
+            else if (key == "opt_staging_uploads") v.stagingUploads = atoi(value.c_str()) != 0;
+            else if (key == "opt_texture_pool") v.texturePool = atoi(value.c_str()) != 0;
+            else if (key == "hdr") v.hdr = atoi(value.c_str()) != 0;
+            else if (key == "hdr_tone_mapper") v.hdrToneMapper = std::clamp(atoi(value.c_str()), 0, 7);
+            else if (key == "hdr_peak_nits") v.hdrPeakNits = std::clamp(float(atof(value.c_str())), 0.0f, 10000.0f);
+            else if (key == "hdr_game_nits") v.hdrGameNits = std::clamp(float(atof(value.c_str())), 48.0f, 1000.0f);
+            else if (key == "hdr_ui_nits") v.hdrUiNits = std::clamp(float(atof(value.c_str())), 48.0f, 1000.0f);
+            else if (key == "hdr_gamma_correction") v.hdrGammaCorrection = std::clamp(atoi(value.c_str()), 0, 2);
+            else if (key == "hdr_exposure") v.hdrExposure = std::clamp(float(atof(value.c_str())), 0.0f, 4.0f);
+            else if (key == "hdr_highlights") v.hdrHighlights = std::clamp(float(atof(value.c_str())), 0.0f, 100.0f);
+            else if (key == "hdr_shadows") v.hdrShadows = std::clamp(float(atof(value.c_str())), 0.0f, 100.0f);
+            else if (key == "hdr_contrast") v.hdrContrast = std::clamp(float(atof(value.c_str())), 0.0f, 100.0f);
+            else if (key == "hdr_saturation") v.hdrSaturation = std::clamp(float(atof(value.c_str())), 0.0f, 100.0f);
+            else if (key == "hdr_highlight_saturation") v.hdrHighlightSaturation = std::clamp(float(atof(value.c_str())), 0.0f, 100.0f);
+            else if (key == "hdr_blowout") v.hdrBlowout = std::clamp(float(atof(value.c_str())), 0.0f, 100.0f);
+            else if (key == "hdr_flare") v.hdrFlare = std::clamp(float(atof(value.c_str())), 0.0f, 100.0f);
+            else if (key == "hdr_hue_correction") v.hdrHueCorrection = std::clamp(float(atof(value.c_str())), 0.0f, 100.0f);
+            else if (key == "hdr_cone_response") v.hdrConeResponse = std::clamp(float(atof(value.c_str())), 0.0f, 100.0f);
+            else if (key == "hdr_bloom") v.hdrBloom = std::clamp(float(atof(value.c_str())), 0.0f, 100.0f);
+            else if (key == "hdr_tv_ramp")
+            {
+                const float ramp = float(atof(value.c_str()));
+                v.hdrTvRamp = std::clamp(ramp, 0.0f, 100.0f);
+            }
+            else if (key == "hdr_hud_match") v.hdrHudMatch = atoi(value.c_str()) != 0;
+            else if (key == "hdr_film_upgrade") v.hdrFilmUpgrade = atoi(value.c_str()) != 0;
             else if (key == "window_mode") v.windowMode = atoi(value.c_str());
             else if (key == "fps_overlay") v.fpsOverlay = atoi(value.c_str()) != 0;
             else if (key == "stats_overlay") v.statsOverlay = atoi(value.c_str()) != 0;
@@ -175,6 +219,10 @@ void Settings::Load(const std::filesystem::path& exeDirectory, bool hungarianAva
             else if (key == "look_sensitivity") v.mouseSensitivity = float(atof(value.c_str()));
             else if (key == "ads_sensitivity") v.adsSensitivity = float(atof(value.c_str()));
             else if (key == "aim_toggle") v.aimToggle = atoi(value.c_str()) != 0;
+            else if (key == "master_volume") v.masterVolume = std::clamp(atoi(value.c_str()), 0, 100);
+            else if (key == "audio_channels") v.audioChannels = std::clamp(atoi(value.c_str()), 0, 2);
+            else if (key == "texture_dump") v.textureDump = atoi(value.c_str()) != 0;
+            else if (key == "texture_replace") v.textureReplace = atoi(value.c_str()) != 0;
             else if (key == "raw_mouse") v.rawMouse = atoi(value.c_str()) != 0;
             else if (key == "auto_update") v.autoUpdate = atoi(value.c_str()) != 0;
             else if (key.compare(0, 4, "key_") == 0)
@@ -201,6 +249,9 @@ void Settings::Load(const std::filesystem::path& exeDirectory, bool hungarianAva
     if (!(v.mouseSensitivity >= 0.05f && v.mouseSensitivity <= 5.0f)) v.mouseSensitivity = 1.0f;
     if (!hungarianAvailable) v.textLanguage = 0;
     if (!(v.adsSensitivity >= 0.1f && v.adsSensitivity <= 5.0f)) v.adsSensitivity = 1.5f;
+    if (v.masterVolume < 0 || v.masterVolume > 100) v.masterVolume = 100;
+    if (v.audioChannels < 0 || v.audioChannels > 2) v.audioChannels = 0;
+    if (v.effectsResolution < 0 || v.effectsResolution > 2) v.effectsResolution = 0;
     std::lock_guard<std::mutex> lock(g_mutex);
     g_values = v;
 }
@@ -217,10 +268,23 @@ void Settings::Save()
         else snprintf(resolution, sizeof(resolution), "desktop");
         fprintf(file, "[graphics]\nrenderer = %d\nresolution = %s\nresolution_scale = %d\ntexture_filter = %d\nanisotropy = %d\nvsync = %d\nunlock_frame_rate = %d\nantialiasing = %d\ntexture_quality = %d\nfov = %d\nads_fov = %d\nmodel_detail = %d\nshadow_quality = %d\naspect_ratio = %d\nconsole_depth = %d\nnative_commands = %d\nwatch_writes = %d\nwindow_mode = %d\nfps_overlay = %d\nstats_overlay = %d\n",
             v.renderer, resolution, v.resolutionScale, v.textureFilter, v.anisotropy, v.vsync ? 1 : 0, v.unlockFrameRate ? 1 : 0, v.antialiasing, v.textureQuality, v.fov, v.adsFov, v.modelDetail, v.shadowQuality, v.aspectRatio, v.consoleDepth ? 1 : 0, v.nativeCommands ? 1 : 0, v.watchWrites ? 1 : 0, v.windowMode, v.fpsOverlay ? 1 : 0, v.statsOverlay ? 1 : 0);
+        fprintf(file, "sharp_shadows = %d\neffects_resolution = %d\nfoliage_coverage = %d\nfast_shadow_maps = %d\n", v.sharpShadows ? 1 : 0,
+                v.effectsResolution, v.foliageCoverage ? 1 : 0, v.fastShadowMaps ? 1 : 0);
+        fprintf(file, "film_video_levels = %d\nsteady_decals = %d\n", v.filmVideoLevels ? 1 : 0, v.steadyDecals ? 1 : 0);
+        fprintf(file, "opt_fast_constants = %d\nopt_shader_load_cache = %d\nopt_strong_change_check = %d\nopt_range_looks = %d\nopt_opaque_shaders = %d\nopt_staging_uploads = %d\nopt_texture_pool = %d\n",
+                v.fastConstants ? 1 : 0, v.shaderLoadCache ? 1 : 0, v.strongChangeCheck ? 1 : 0,
+                v.rangeLooks ? 1 : 0, v.opaqueShaders ? 1 : 0, v.stagingUploads ? 1 : 0, v.texturePool ? 1 : 0);
+        fprintf(file, "hdr = %d\nhdr_tone_mapper = %d\nhdr_peak_nits = %.0f\nhdr_game_nits = %.0f\nhdr_ui_nits = %.0f\nhdr_gamma_correction = %d\n",
+                v.hdr ? 1 : 0, v.hdrToneMapper, v.hdrPeakNits, v.hdrGameNits, v.hdrUiNits, v.hdrGammaCorrection);
+        fprintf(file, "hdr_exposure = %.2f\nhdr_highlights = %.0f\nhdr_shadows = %.0f\nhdr_contrast = %.0f\nhdr_saturation = %.0f\nhdr_highlight_saturation = %.0f\nhdr_blowout = %.0f\nhdr_flare = %.0f\nhdr_hue_correction = %.0f\nhdr_cone_response = %.0f\nhdr_bloom = %.0f\nhdr_tv_ramp = %.0f\nhdr_film_upgrade = %d\nhdr_hud_match = %d\n",
+                v.hdrExposure, v.hdrHighlights, v.hdrShadows, v.hdrContrast, v.hdrSaturation, v.hdrHighlightSaturation, v.hdrBlowout,
+                v.hdrFlare, v.hdrHueCorrection, v.hdrConeResponse, v.hdrBloom, v.hdrTvRamp, v.hdrFilmUpgrade ? 1 : 0, v.hdrHudMatch ? 1 : 0);
+        fprintf(file, "frame_cap = %d\ntexture_dump = %d\ntexture_replace = %d\n", v.frameCap, v.textureDump ? 1 : 0, v.textureReplace ? 1 : 0);
         fprintf(file, "[game]\naim_assist = %d\nsubtitles = %d\nconsole = %d\ncontroller = %d\nbutton_prompts = %d\nlook_sensitivity = %.2f\nraw_mouse = %d\nauto_update = %d\n", v.aimAssist ? 1 : 0,
             v.subtitles ? 1 : 0, v.console ? 1 : 0, v.controller ? 1 : 0, v.buttonPrompts, v.mouseSensitivity, v.rawMouse ? 1 : 0, v.autoUpdate ? 1 : 0);
         fprintf(file, "aim_toggle = %d\nads_sensitivity = %.2f\naim_blur = %d\n", v.aimToggle ? 1 : 0, v.adsSensitivity, v.aimBlur ? 1 : 0);
         fprintf(file, "text_language = %s\n", v.textLanguage == 1 ? "hu" : "en");
+        fprintf(file, "master_volume = %d\naudio_channels = %d\n", v.masterVolume, v.audioChannels);
         fprintf(file, "[keys]\n");
         for (int i = 0; i < ActionCount; i++) fprintf(file, "key_%s = %d\n", ActionKeys[i], v.keys[i]);
         fclose(file);

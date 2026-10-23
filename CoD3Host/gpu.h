@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 // The GPU register file and command processor.
 
 #include <atomic>
@@ -105,6 +107,10 @@ namespace Gpu
     // Reports a register the driver is reading in a loop, which is how a wait
     // for the GPU shows up from this side.
     void ReportPolling();
+
+    // Until the GPU has carried out `needed` swap packets, or the time is
+    // up. Woken by the swap itself rather than by polling.
+    bool WaitForSwapsReached(uint64_t needed, std::chrono::milliseconds limit);
 
     // What kinds of packet the title is actually sending.
     void ReportPacketMix();

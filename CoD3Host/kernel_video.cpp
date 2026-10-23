@@ -532,7 +532,7 @@ namespace
 
                     static std::atomic<int> announced{ 0 };
                     if (block != 0 && (flagBefore != 0 || countdownBefore != 0) &&
-                        announced.fetch_add(1) < 24)
+                        (announced.load(std::memory_order_relaxed) < 24 && announced.fetch_add(1) < 24))
                     {
                         printf("vblank: countdown %u -> %u, swap flag %u -> %u, status 0x%08X\n",
                             countdownBefore, Guest::Read32(Guest::Base, context + 15132),
@@ -1422,10 +1422,8 @@ PPC_FUNC(__imp__VdSwap)
             {
                 Scheduler::Release();
                 struct Resume { ~Resume() { Scheduler::Acquire(); } } resume;
-                const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(500);
-                while (Kernel::Stats().swapsReached.load(std::memory_order_acquire) < needed &&
-                       std::chrono::steady_clock::now() < deadline)
-                    std::this_thread::sleep_for(std::chrono::microseconds(200));
+                // Woken by the swap itself (gpu.cpp), up to half a second.
+                Gpu::WaitForSwapsReached(needed, std::chrono::milliseconds(500));
             }
         }
     }
@@ -1510,6 +1508,11 @@ uint32_t Gpu::InterruptContext()
 }
 
 bool Kernel::FrameRateUnlocked() { return g_frameRateUnlocked.load(std::memory_order_relaxed); }
+
+bool Kernel::FilmPlaying()
+{
+    return Guest::Read32(Guest::Base, 0x82A2A24Cu) != 0;   // the film player (TitlePlaying above)
+}
 
 void Kernel::QueueConsoleCommand(const std::string& text)
 {

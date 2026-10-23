@@ -51,6 +51,7 @@ add_executable(CoD3 WIN32
     "render_pipeline.cpp"
     "render_shaders.cpp"
     "render_resources.cpp"
+    "texture_pack.cpp"
     "render_stats.cpp"
     "xenos_hlsl.cpp"
     "gpu.cpp"
@@ -90,6 +91,11 @@ add_executable(CoD3 WIN32
     "embedded_libraries.cpp"
     "updater.cpp"
     "resources/CoD3.rc")
+
+# HDR shader sources are embedded so the installed game needs no extra files.
+set(COD3_HDR_EMBED_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/hdr_shader_files.cpp")
+include("${CMAKE_CURRENT_SOURCE_DIR}/hdr/embed_shaders.cmake")
+target_sources(CoD3 PRIVATE "${COD3_HDR_EMBED_OUTPUT}")
 
 # Keep the release executable name and updater version, with the local
 # window-only startup. Diagnostics still go to CoD3.log.
