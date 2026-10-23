@@ -81,3 +81,29 @@ A textúrapack betöltője a fork korábbi állapotában is szerepelt; csak anna
 
 A nyers tesztfájlok és képek az ignorált `build/fork-review/validation` és
 `build/fork-review/runtime` könyvtárakban maradnak; játékadatot nem commitolunk.
+
+## További grafikai kapcsolók és számlálójavítás
+
+Az F11 → Graphics lapra a fork `settings.cpp` és `overlay.cpp` fájljai alapján
+négy további beállítás került: Fog, Draw distance, Particle effects és
+Dynamic lights. A korábbi INI alapértékei megtartják a játék saját ködjét,
+automatikus látótávolságát, összes effektjét és dinamikus fényeit. Apply után
+újraindítás nélkül kerülnek a játék parancspufferébe a `r_fog`, `r_zfar`,
+`fx_enable`, `fx_cullscale` és `r_dynamiclight` változók értékei. A beállításokat
+az INI megőrzi. A részecske-effektek mennyisége és a már meglévő
+effektfelbontás külön kapcsoló.
+
+A [b532bcc számlálójavítás](https://github.com/hovg-N8/CoD3Recomp/commit/b532bcc0b0)
+megmaradt része is átkerült a meglévő egyjátékos/közös naplózási pontokra.
+A korlátozott diagnosztikai számlálók a határ elérése után nem növekednek
+tovább, így nem fordulnak át, és az atomi inkrementálás sem terheli tovább
+az érintett hívásokat. A futási statisztikák számlálói nem változnak.
+Az inputfájl ütközésénél a saját gombnyomási időbélyeg-kezelés megmaradt;
+a fork további kontrolleres naplózását nem vettük át.
+
+Az A/V beállításteszt az új mezők alapértékeit, mentését, határértékeit,
+a játékparancsok egyszeri kiküldését, az effektek kikapcsolását és az eredeti
+grafikai állapot visszaállítását is ellenőrzi.
+A Forest pálya 90 másodperces próbakörében a négy eltérő tesztbeállítás
+parancsai is bekerültek a játék pufferébe; a futás szabályosan, 0-s kóddal
+lépett ki. A Windows host fordítása és a korábbi regressziótesztek sikeresek.

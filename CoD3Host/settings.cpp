@@ -161,6 +161,10 @@ void Settings::Load(const std::filesystem::path& exeDirectory, bool hungarianAva
             else if (key == "fov") v.fov = atoi(value.c_str());
             else if (key == "ads_fov") v.adsFov = atoi(value.c_str());
             else if (key == "model_detail") v.modelDetail = atoi(value.c_str());
+            else if (key == "fog") v.fog = atoi(value.c_str()) != 0;
+            else if (key == "draw_distance") v.drawDistance = std::clamp(atoi(value.c_str()), 0, 3);
+            else if (key == "effects") v.effects = std::clamp(atoi(value.c_str()), 0, 2);
+            else if (key == "dynamic_lights") v.dynamicLights = atoi(value.c_str()) != 0;
             else if (key == "shadow_quality") v.shadowQuality = atoi(value.c_str());
             else if (key == "aspect_ratio") v.aspectRatio = atoi(value.c_str());
             else if (key == "aim_blur") v.aimBlur = atoi(value.c_str()) != 0;
@@ -270,6 +274,8 @@ void Settings::Save()
             v.renderer, resolution, v.resolutionScale, v.textureFilter, v.anisotropy, v.vsync ? 1 : 0, v.unlockFrameRate ? 1 : 0, v.antialiasing, v.textureQuality, v.fov, v.adsFov, v.modelDetail, v.shadowQuality, v.aspectRatio, v.consoleDepth ? 1 : 0, v.nativeCommands ? 1 : 0, v.watchWrites ? 1 : 0, v.windowMode, v.fpsOverlay ? 1 : 0, v.statsOverlay ? 1 : 0);
         fprintf(file, "sharp_shadows = %d\neffects_resolution = %d\nfoliage_coverage = %d\nfast_shadow_maps = %d\n", v.sharpShadows ? 1 : 0,
                 v.effectsResolution, v.foliageCoverage ? 1 : 0, v.fastShadowMaps ? 1 : 0);
+        fprintf(file, "fog = %d\ndraw_distance = %d\neffects = %d\ndynamic_lights = %d\n",
+                v.fog ? 1 : 0, v.drawDistance, v.effects, v.dynamicLights ? 1 : 0);
         fprintf(file, "film_video_levels = %d\nsteady_decals = %d\n", v.filmVideoLevels ? 1 : 0, v.steadyDecals ? 1 : 0);
         fprintf(file, "opt_fast_constants = %d\nopt_shader_load_cache = %d\nopt_strong_change_check = %d\nopt_range_looks = %d\nopt_opaque_shaders = %d\nopt_staging_uploads = %d\nopt_texture_pool = %d\n",
                 v.fastConstants ? 1 : 0, v.shaderLoadCache ? 1 : 0, v.strongChangeCheck ? 1 : 0,
@@ -386,6 +392,34 @@ std::string Settings::TitleCommandsChanged()
     {
         appliedSubtitles = v.subtitles;
         commands += std::string("set cg_subtitles ") + (v.subtitles ? "1" : "0") + "\n";
+    }
+    // These are the title's own variables, changed at run time through the
+    // same command buffer as FOV and subtitles. Defaults keep the game's look.
+    static bool appliedFog = true, appliedLights = true;
+    static int appliedDistance = 0, appliedEffects = 0;
+    if (v.fog != appliedFog)
+    {
+        appliedFog = v.fog;
+        commands += std::string("set r_fog ") + (v.fog ? "1" : "0") + "\n";
+    }
+    const int distance = std::clamp(v.drawDistance, 0, 3);
+    if (distance != appliedDistance)
+    {
+        appliedDistance = distance;
+        static const char* const distances[] = { "0", "9000", "6000", "3500" };
+        commands += std::string("set r_zfar ") + distances[distance] + "\n";
+    }
+    const int effects = std::clamp(v.effects, 0, 2);
+    if (effects != appliedEffects)
+    {
+        appliedEffects = effects;
+        commands += std::string("set fx_enable ") + (effects == 2 ? "0" : "1") + "\nset fx_cullscale " +
+                    (effects == 1 ? "0.5" : "1") + "\n";
+    }
+    if (v.dynamicLights != appliedLights)
+    {
+        appliedLights = v.dynamicLights;
+        commands += std::string("set r_dynamiclight ") + (v.dynamicLights ? "1" : "0") + "\n";
     }
     if (!commands.empty()) commands.pop_back();   // the last line's end: the queue adds its own
     return commands;

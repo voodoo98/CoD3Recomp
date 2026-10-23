@@ -20,6 +20,10 @@ int main(int argc, char** argv)
         Settings::Load(folder, true);
         auto v = Settings::Get();
         Check(v.masterVolume == 100 && v.audioChannels == 0 && !v.hdr && !v.textureDump, "Old INI migration changed defaults");
+        Check(v.fog && v.drawDistance == 0 && v.effects == 0 && v.dynamicLights, "Old INI changed the game's visual defaults");
+        Settings::TitleCommandsChanged(); // initial FOV/model state
+        Check(Settings::TitleCommandsChanged().empty(), "Default commands repeated");
+        v.fog = false; v.drawDistance = 1; v.effects = 1; v.dynamicLights = false;
         v.hdr = true; v.hdrToneMapper = 7; v.hdrPeakNits = 1200; v.hdrGameNits = 250;
         v.hdrUiNits = 180; v.hdrGammaCorrection = 2; v.hdrExposure = 1.25f;
         v.hdrHighlights = 61; v.hdrShadows = 43; v.hdrContrast = 55; v.hdrSaturation = 60;
@@ -40,7 +44,8 @@ int main(int argc, char** argv)
             &Settings::Values::fastShadowMaps, &Settings::Values::steadyDecals, &Settings::Values::filmVideoLevels,
             &Settings::Values::fastConstants, &Settings::Values::shaderLoadCache, &Settings::Values::strongChangeCheck,
             &Settings::Values::rangeLooks, &Settings::Values::opaqueShaders, &Settings::Values::stagingUploads,
-            &Settings::Values::texturePool, &Settings::Values::hdrHudMatch, &Settings::Values::hdrFilmUpgrade };
+            &Settings::Values::texturePool, &Settings::Values::hdrHudMatch, &Settings::Values::hdrFilmUpgrade,
+            &Settings::Values::fog, &Settings::Values::dynamicLights };
         for (auto flag : flags) Check(restored.*flag == v.*flag, "An A/V toggle was lost");
         const float Settings::Values::* sliders[] = { &Settings::Values::hdrPeakNits, &Settings::Values::hdrGameNits,
             &Settings::Values::hdrUiNits, &Settings::Values::hdrExposure, &Settings::Values::hdrHighlights,
@@ -51,15 +56,30 @@ int main(int argc, char** argv)
         for (auto slider : sliders) Check(restored.*slider == v.*slider, "An HDR slider was lost");
         Check(restored.frameCap == 165 && restored.masterVolume == 37 && restored.audioChannels == 2 &&
               restored.effectsResolution == 2 && restored.hdrToneMapper == 7 && restored.hdrGammaCorrection == 2, "An A/V selection was lost");
+        Check(restored.drawDistance == 1 && restored.effects == 1, "Graphics choices did not persist");
+        Check(Settings::TitleCommandsChanged() == "set r_fog 0\nset r_zfar 9000\nset fx_enable 1\nset fx_cullscale 0.5\nset r_dynamiclight 0",
+              "Graphics choices did not reach the game's command buffer");
+        Check(Settings::TitleCommandsChanged().empty(), "Unchanged graphics commands repeated");
+        auto reduced = restored;
+        reduced.effects = 2; reduced.drawDistance = 3;
+        Settings::Preview(reduced);
+        Check(Settings::TitleCommandsChanged() == "set r_zfar 3500\nset fx_enable 0\nset fx_cullscale 1", "Disabling effects did not reach the game");
         Check(restored.textLanguage == 1 && restored.aimToggle && restored.adsSensitivity == 0.65f, "Local language/input settings changed");
         Settings::Preview(Settings::Defaults());
         Settings::Load(folder, true);
         Check(Settings::Get().hdr && Settings::Get().masterVolume == 37, "Preview unexpectedly wrote the INI");
-        std::ofstream(folder / "CoD3Recomp.ini") << "frame_cap = -20\naudio_channels = 99\nmaster_volume = 999\neffects_resolution = 8\nhdr_tone_mapper = 99\nhdr_exposure = 99\n";
+        Settings::TitleCommandsChanged();
+        auto defaults = Settings::Get();
+        defaults.fog = true; defaults.drawDistance = 0; defaults.effects = 0; defaults.dynamicLights = true;
+        Settings::Preview(defaults);
+        Check(Settings::TitleCommandsChanged() == "set r_fog 1\nset r_zfar 0\nset fx_enable 1\nset fx_cullscale 1\nset r_dynamiclight 1",
+              "Restoring the game's graphics did not restore its variables");
+        std::ofstream(folder / "CoD3Recomp.ini") << "frame_cap = -20\naudio_channels = 99\nmaster_volume = 999\neffects_resolution = 8\nhdr_tone_mapper = 99\nhdr_exposure = 99\ndraw_distance = 999\neffects = -7\n";
         Settings::Load(folder, true);
         v = Settings::Get();
         Check(v.frameCap == 0 && v.audioChannels == 2 && v.masterVolume == 100 && v.effectsResolution == 0 &&
               v.hdrToneMapper == 7 && v.hdrExposure == 4.0f, "Invalid A/V settings escaped their limits");
+        Check(v.drawDistance == 3 && v.effects == 0, "Invalid graphics choices escaped their limits");
         std::cout << "PASS: A/V migration, persistence, HDR controls, preview, bounds and existing language/input settings\n";
     }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }

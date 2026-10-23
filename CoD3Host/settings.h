@@ -42,6 +42,10 @@ namespace Settings
         int fov = 65;                 // the title's cg_fov, 65 (its own) .. 100
         int adsFov = 100;             // per cent of each weapon's own adsZoomFov when aiming down the sights, 100 (its own) .. 250; scopes are left alone
         int modelDetail = 1;          // 0 the title's own level of detail (r_lodscale 1), 1 the most detailed models at every distance (r_lodscale 0)
+        bool fog = true;              // the title's fog, r_fog
+        int drawDistance = 0;         // 0 automatic; 1 far, 2 medium, 3 near (r_zfar)
+        int effects = 0;              // 0 all, 1 fewer distant effects, 2 off
+        bool dynamicLights = true;    // muzzle flashes and explosions lighting nearby surfaces
         int aspectRatio = 0;          // the picture's shape in a level: 0 the console's 16:9, 1 the window's, 2 21:9, 3 32:9 (widescreen.cpp)
         int shadowQuality = 0;        // the shadow maps' size: 0 as the frame (the console's 512 times the frame's scale), 1 512, 2 1024, 3 2048, 4 4096 (render_resources.cpp)
         bool aimBlur = false;          // depth of field while aiming down the sights

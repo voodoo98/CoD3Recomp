@@ -35,6 +35,10 @@ build\audio-limiter-test.exe
 HDR and optimization controls, preview without saving, bounds, and preservation
 of the existing language and input settings. It uses its own `av-settings` folder:
 
+The checks also cover fog, draw distance, particle effects and dynamic lights:
+their defaults and persistence, bounded choices, commands emitted on Apply,
+no repeated commands while unchanged, and restoring the game's defaults.
+
 ```bat
 clang-cl /nologo /std:c++20 /EHsc /DNOMINMAX /D_CRT_SECURE_NO_WARNINGS tests/av_settings_test.cpp CoD3Host/settings.cpp /Fe:build/av-settings-test.exe /Fo:build/ /link user32.lib
 build\av-settings-test.exe build

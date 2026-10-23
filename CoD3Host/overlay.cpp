@@ -399,6 +399,16 @@ namespace
                     ImGui::Combo("Model detail", &g_edit.modelDetail, details, 2);
                     ImGui::SameLine();
                     ImGui::TextDisabled("(Maximum: the finest version of every model at any distance)");
+                    ImGui::Checkbox("Fog", &g_edit.fog);
+                    const char* distances[] = { "Automatic (the game's own)", "Far", "Medium", "Near" };
+                    ImGui::Combo("Draw distance", &g_edit.drawDistance, distances, 4);
+                    const char* effects[] = { "All", "Reduced distant effects", "Off" };
+                    ImGui::Combo("Particle effects", &g_edit.effects, effects, 3);
+                    ImGui::SameLine();
+                    ImGui::TextDisabled("(smoke, dust, fire and sparks)");
+                    ImGui::Checkbox("Dynamic lights", &g_edit.dynamicLights);
+                    ImGui::SameLine();
+                    ImGui::TextDisabled("(muzzle flashes and explosions lighting nearby surfaces)");
                     ImGui::Checkbox("Console depth precision", &g_edit.consoleDepth);
                     ImGui::SameLine();
                     ImGui::TextDisabled("(no flickering surfaces; costs frame rate with MSAA; after a restart)");
