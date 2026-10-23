@@ -60,6 +60,8 @@ $PayloadDir = (Resolve-Path -LiteralPath $PayloadDir).Path
 $files = @('dxgi.dll', 'CoD3Depth.addon64', 'deep-fried-chicken.addon64', 'deep-fried-chicken-nvngx.dll',
     'deep-fried-chicken.cfg', 'nvngx_dlssnr.dll', 'nvngx_dlss.dll', 'dlss5-feed.addon64',
     'dlss5-feed.cfg', 'DLSS5Preset.ini', 'reshade-shaders/Shaders/DLSS5_Feed.fx',
+    'reshade-shaders/Shaders/AdaptiveSharpen.fx',
+    'reshade-shaders/Shaders/SweetFX/LumaSharpen.fx',
     'reshade-shaders/Shaders/ReShade.fxh', 'reshade-shaders/Shaders/ReShadeUI.fxh',
     'reshade-shaders/Textures/lumenite_bluenoise256.png')
 $lumenite = ChildPath $PayloadDir 'reshade-shaders/Shaders/LumeniteFX'

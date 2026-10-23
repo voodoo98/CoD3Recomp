@@ -23,7 +23,6 @@
 namespace
 {
     std::atomic<bool> g_started{ false };
-    HANDLE g_readEnd = nullptr;   // the pipe's end the copier reads, to see it empty
 
     // A run prints its report every ten seconds, some tens of megabytes an
     // hour. Past this the file starts over: what is wanted from it is the
@@ -114,15 +113,16 @@ void Log::Start()
         CloseHandle(readEnd); CloseHandle(writeEnd); CloseHandle(file);
         return;
     }
-    _dup2(descriptor, 1);
-    _dup2(descriptor, 2);
+    // A window-only launch may reopen stdout/stderr on descriptors 0 and 1,
+    // rather than the console's usual 1 and 2. Redirect the actual streams.
+    _dup2(descriptor, _fileno(stdout));
+    _dup2(descriptor, _fileno(stderr));
     // Unbuffered, as a console is: a prompt must show before the program
     // waits for an answer, and a line must be out before a crash can lose
     // it. A normal run prints a few lines every ten seconds.
     setvbuf(stdout, nullptr, _IONBF, 0);
     setvbuf(stderr, nullptr, _IONBF, 0);
 
-    g_readEnd = readEnd;
     std::thread(Copier, readEnd, file, console).detach();
     g_started.store(true);
     printf("log: %ls\n", path.c_str());
@@ -133,14 +133,9 @@ void Log::Finish()
     if (!g_started.load()) return;
     fflush(stdout);
     fflush(stderr);
-    // The copier takes what is in the pipe on its own; this only waits for
-    // the pipe to come up empty, and never long enough to hold up an exit.
-    for (int i = 0; i < 50; i++)
-    {
-        DWORD waiting = 0;
-        if (!PeekNamedPipe(g_readEnd, nullptr, 0, nullptr, &waiting, nullptr) || waiting == 0) break;
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-    // What was read last may still be on its way to the file.
+    // Best effort only: do not query the synchronous read handle here.
+    // PeekNamedPipe can wait indefinitely behind the copier's blocking
+    // ReadFile when the pipe is empty, preventing Quit from ending the host.
+    // Give the copier a bounded moment to finish its most recent write.
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
 }

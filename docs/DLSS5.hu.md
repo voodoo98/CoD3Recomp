@@ -19,7 +19,18 @@ a neural-rendering további GPU-munkát végez.
 - **F11**: a játék saját beállításai, a korábban hozzáadott nyelvválasztóval együtt.
 
 Az eredeti ReShade preset megmarad; az új összeállítás külön `DLSS5Preset.ini`-t használ.
+A közös profil sorrendje: Lumenite Kernel → DLSS5 Feed → AdaptiveSharpen → LumaSharpen.
+Az élesítés így a neurális kimenetre kerül, az eredeti profil értékeivel:
+AdaptiveSharpen `curve_height=1.0`, LumaSharpen `sharp_strength=0.65`, `sharp_clamp=0.035`.
+Az End csak a neurális feldolgozást kapcsolja, a két élesítő bekapcsolva marad.
 A magyar fordítás és a mentések nem részei ennek a telepítésnek.
+
+Ha az End nem változtat a képen, ellenőrizd a `DLSS5Preset.ini` profilban, hogy
+a `Lumenite_Kernel@lumenite_Kernel.fx` után a `DLSS5_Feed@DLSS5_Feed.fx` is szerepel
+az aktív `Techniques` sorban. A Feeder kikapcsolása megszakítja a neurális láncot;
+az összehasonlításhoz az End billentyűt használd. A játék F11 menüjében az MSAA
+maradjon kikapcsolva, mert a CoD3Depth csak az egymintás mélységi puffert kezeli.
+A billentyű csak akkor működik, amikor a játék ablaka aktív.
 
 ## CoD3 Scene Depth
 
